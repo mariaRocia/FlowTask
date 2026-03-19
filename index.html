@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FlowTask | Gestao de Tarefas</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header>
+        <div class="navbar-fixed">
+          <nav class="taskflow-nav">
+            <div class="nav-wrapper container">
+              <a href="#dashboard" class="brand-logo">FlowTask</a>
+              <a href="#" data-target="mobile-nav" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+              <ul class="right hide-on-med-and-down">
+                <li><a href="#dashboard">Dashboard</a></li>
+                <li><a href="#usuarios">Usuarios</a></li>
+                <li><a href="#tarefas">Tarefas</a></li>
+                <li><a href="#listagem">Listagem</a></li>
+              </ul>
+            </div>
+          </nav>
+        </div>
+        <ul class="sidenav" id="mobile-nav">
+          <li><a href="#dashboard">Dashboard</a></li>
+          <li><a href="#usuarios">Usuarios</a></li>
+          <li><a href="#tarefas">Tarefas</a></li>
+          <li><a href="#listagem">Listagem</a></li>
+        </ul>
+      </header>
+
+      <main>
+        <section class="hero-section">
+          <div class="container">
+            <div class="row hero-grid">
+              <div class="col s12 l7">
+                <span class="eyebrow">Gestao colaborativa para pequenas equipes</span>
+                <h1>Organize tarefas, pessoas e prioridades em um unico fluxo.</h1>
+                <p class="hero-copy">
+                  O FlowTask centraliza usuarios, tarefas e acompanhamento de status em uma interface leve, clara e pronta para integracao futura com API.
+                </p>
+                <div class="hero-actions">
+                  <a href="#dashboard" class="btn-large waves-effect waves-light action-btn">Ver dashboard</a>
+                  <a href="#modal-task" class="btn-large modal-trigger ghost-btn">Nova tarefa</a>
+                </div>
+              </div>
+              <div class="col s12 l5">
+                <div class="hero-panel z-depth-2">
+                  <div class="hero-panel-head">
+                    <span>Resumo rapido</span>
+                    <i class="material-icons">insights</i>
+                  </div>
+                  <ul class="hero-metrics">
+                    <li><strong id="hero-total">0</strong><span>Tarefas registradas</span></li>
+                    <li><strong id="hero-team">0</strong><span>Usuarios ativos</span></li>
+                    <li><strong id="hero-progress">0%</strong><span>Taxa de conclusao</span></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="dashboard" class="section scrollspy">
+          <div class="container">
+            <div class="section-heading">
+              <div>
+                <span class="section-tag">Dashboard</span>
+                <h2>Painel geral</h2>
+              </div>
+              <p>Visao consolidada do volume de tarefas por status.</p>
+            </div>
+            <div class="row stats-grid" id="dashboard-cards"></div>
+          </div>
+        </section>
+
+        <section id="usuarios" class="section section-soft scrollspy">
+          <div class="container">
+            <div class="section-heading">
+              <div>
+                <span class="section-tag">Usuarios</span>
+                <h2>Cadastro de usuarios</h2>
+              </div>
+              <p>Adicione membros da equipe e mantenha a lista disponivel para atribuicao de tarefas.</p>
+            </div>
+
+            <div class="row">
+              <div class="col s12 l5">
+                <div class="card panel-card">
+                  <div class="card-content">
+                    <span class="card-title">Novo usuario</span>
+                    <form id="user-form" novalidate>
+                      <div class="input-field">
+                        <i class="material-icons prefix">person</i>
+                        <input id="user-name" name="name" type="text" maxlength="60" required />
+                        <label for="user-name">Nome</label>
+                      </div>
+                      <div class="input-field">
+                        <i class="material-icons prefix">email</i>
+                        <input id="user-email" name="email" type="email" maxlength="80" required />
+                        <label for="user-email">Email</label>
+                      </div>
+                      <div class="input-field">
+                        <i class="material-icons prefix">badge</i>
+                        <input id="user-role" name="role" type="text" maxlength="50" required />
+                        <label for="user-role">Funcao</label>
+                      </div>
+                      <button class="btn waves-effect waves-light full-width" type="submit">
+                        <i class="material-icons left">save</i>Salvar usuario
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col s12 l7">
+                <div class="card panel-card">
+                  <div class="card-content">
+                    <div class="list-header">
+                      <span class="card-title">Equipe cadastrada</span>
+                      <span class="chip count-chip" id="users-count-chip">0 usuarios</span>
+                    </div>
+                    <div id="users-list" class="collection task-collection"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="tarefas" class="section scrollspy">
+          <div class="container">
+            <div class="section-heading">
+              <div>
+                <span class="section-tag">Tarefas</span>
+                <h2>Cadastro de tarefas</h2>
+              </div>
+              <p>Use o formulario rapido ou o modal para criar novas tarefas com prioridade, prazo e responsavel.</p>
+            </div>
+
+            <div class="row">
+              <div class="col s12 l8">
+                <div class="card panel-card">
+                  <div class="card-content">
+                    <div class="list-header">
+                      <span class="card-title">Nova tarefa</span>
+                      <a href="#modal-task" class="btn-small modal-trigger secondary-btn"><i class="material-icons left">add_task</i>Abrir modal</a>
+                    </div>
+                    <form id="task-form" novalidate>
+                      <div class="row">
+                        <div class="input-field col s12 m6">
+                          <i class="material-icons prefix">title</i>
+                          <input id="task-title" name="title" type="text" maxlength="80" required />
+                          <label for="task-title">Titulo</label>
+                        </div>
+                        <div class="input-field col s12 m6">
+                          <i class="material-icons prefix">priority_high</i>
+                          <select id="task-priority" name="priority" required>
+                            <option value="" disabled selected>Selecione a prioridade</option>
+                            <option value="Baixa">Baixa</option>
+                            <option value="Media">Media</option>
+                            <option value="Alta">Alta</option>
+                          </select>
+                          <label for="task-priority">Prioridade</label>
+                        </div>
+                        <div class="input-field col s12">
+                          <i class="material-icons prefix">subject</i>
+                          <textarea id="task-description" name="description" class="materialize-textarea" maxlength="240" required></textarea>
+                          <label for="task-description">Descricao</label>
+                        </div>
+                        <div class="input-field col s12 m6">
+                          <i class="material-icons prefix">event</i>
+                          <input id="task-deadline" name="deadline" type="date" required />
+                          <label for="task-deadline" class="active">Prazo</label>
+                        </div>
+                        <div class="input-field col s12 m6">
+                          <i class="material-icons prefix">group</i>
+                          <select id="task-user" name="responsibleId" required>
+                            <option value="" disabled selected>Selecione o responsavel</option>
+                          </select>
+                          <label for="task-user">Responsavel</label>
+                        </div>
+                      </div>
+                      <div class="form-actions">
+                        <button class="btn waves-effect waves-light" type="submit"><i class="material-icons left">save</i>Salvar tarefa</button>
+                        <button class="btn-flat" type="reset" id="task-reset-button">Limpar</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col s12 l4">
+                <div class="card panel-card highlight-card">
+                  <div class="card-content">
+                    <span class="card-title">Regras visuais</span>
+                    <div class="rule-list">
+                      <div class="rule-item"><span class="badge-dot done-dot"></span><span>Verde para tarefas concluidas</span></div>
+                      <div class="rule-item"><span class="badge-dot progress-dot"></span><span>Amarelo para tarefas em andamento</span></div>
+                      <div class="rule-item"><span class="badge-dot high-dot"></span><span>Vermelho para prioridade alta</span></div>
+                    </div>
+                    <p class="helper-text custom-helper">Os dados sao simulados com arrays JavaScript para facilitar a futura integracao com APIs.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="listagem" class="section section-soft scrollspy">
+          <div class="container">
+            <div class="section-heading">
+              <div>
+                <span class="section-tag">Listagem</span>
+                <h2>Tarefas registradas</h2>
+              </div>
+              <p>Filtre por prioridade, responsavel e status. Ordenacao por prioridade e prazo aplicada automaticamente.</p>
+            </div>
+
+            <div class="card panel-card">
+              <div class="card-content">
+                <div class="row filter-row">
+                  <div class="input-field col s12 m4">
+                    <select id="filter-priority">
+                      <option value="Todos" selected>Todas as prioridades</option>
+                      <option value="Alta">Alta</option>
+                      <option value="Media">Media</option>
+                      <option value="Baixa">Baixa</option>
+                    </select>
+                    <label>Filtrar por prioridade</label>
+                  </div>
+                  <div class="input-field col s12 m4">
+                    <select id="filter-user">
+                      <option value="Todos" selected>Todos os responsaveis</option>
+                    </select>
+                    <label>Filtrar por responsavel</label>
+                  </div>
+                  <div class="input-field col s12 m4">
+                    <select id="filter-status">
+                      <option value="Todos" selected>Todos os status</option>
+                      <option value="A fazer">A fazer</option>
+                      <option value="Em andamento">Em andamento</option>
+                      <option value="Concluido">Concluido</option>
+                    </select>
+                    <label>Filtrar por status</label>
+                  </div>
+                </div>
+
+                <div class="table-responsive">
+                  <table class="highlight responsive-table">
+                    <thead>
+                      <tr>
+                        <th>Titulo</th>
+                        <th>Responsavel</th>
+                        <th>Prioridade</th>
+                        <th>Prazo</th>
+                        <th>Status</th>
+                        <th>Acoes</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tasks-table-body"></tbody>
+                  </table>
+                </div>
+                <div id="empty-state" class="empty-state hide">
+                  <i class="material-icons">task_alt</i>
+                  <h3>Nenhuma tarefa encontrada</h3>
+                  <p>Ajuste os filtros ou crie uma nova tarefa para preencher a lista.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div id="modal-task" class="modal modal-fixed-footer">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h4>Criar tarefa pelo modal</h4>
+          <p>Fluxo alternativo para cadastro rapido sem sair da listagem.</p>
+        </div>
+        <form id="modal-task-form" novalidate>
+          <div class="row">
+            <div class="input-field col s12 m6">
+              <input id="modal-task-title" name="title" type="text" maxlength="80" required />
+              <label for="modal-task-title">Titulo</label>
+            </div>
+            <div class="input-field col s12 m6">
+              <select id="modal-task-priority" name="priority" required>
+                <option value="" disabled selected>Selecione a prioridade</option>
+                <option value="Baixa">Baixa</option>
+                <option value="Media">Media</option>
+                <option value="Alta">Alta</option>
+              </select>
+              <label for="modal-task-priority">Prioridade</label>
+            </div>
+            <div class="input-field col s12">
+              <textarea id="modal-task-description" name="description" class="materialize-textarea" maxlength="240" required></textarea>
+              <label for="modal-task-description">Descricao</label>
+            </div>
+            <div class="input-field col s12 m6">
+              <input id="modal-task-deadline" name="deadline" type="date" required />
+              <label for="modal-task-deadline" class="active">Prazo</label>
+            </div>
+            <div class="input-field col s12 m6">
+              <select id="modal-task-user" name="responsibleId" required>
+                <option value="" disabled selected>Selecione o responsavel</option>
+              </select>
+              <label for="modal-task-user">Responsavel</label>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <a href="#!" class="modal-close btn-flat">Cancelar</a>
+        <button form="modal-task-form" type="submit" class="btn waves-effect waves-light"><i class="material-icons left">save</i>Salvar tarefa</button>
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script src="./js/users.js"></script>
+    <script src="./js/tasks.js"></script>
+    <script src="./js/app.js"></script>
+  </body>
+</html>
