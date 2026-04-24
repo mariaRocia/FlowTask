@@ -1,15 +1,11 @@
 (function () {
-  const users = [
-    { id: 1, name: "Ana Souza", email: " ana@flowtask.com", role: "Product Owner" },
-    { id: 2, name: "Carlos Lima", email: " carlos@flowtask.com", role: "Designer UI" },
-    { id: 3, name: "Marina Costa", email: " marina@flowtask.com", role: "Desenvolvedora Front-end" }
-  ];
-
-  function getUsers() {
-    return [...users];
+  async function getUsers() {
+    return window.FlowTaskApi.requestJson("/api/users", undefined, "Nao foi possivel carregar os usuarios.");
   }
 
-  function findUserById(id) {
+  async function findUserById(id) {
+    const users = await getUsers();
+
     return (
       users.find(function (user) {
         return user.id === Number(id);
@@ -17,16 +13,18 @@
     );
   }
 
-  function createUser(payload) {
-    const user = {
-      id: Date.now(),
-      name: payload.name.trim(),
-      email: payload.email.trim().toLowerCase(),
-      role: payload.role.trim()
-    };
-
-    users.unshift(user);
-    return user;
+  async function createUser(payload) {
+    return window.FlowTaskApi.requestJson(
+      "/api/users",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      },
+      "Nao foi possivel salvar o usuario."
+    );
   }
 
   window.FlowTaskUsers = {

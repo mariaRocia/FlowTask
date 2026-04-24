@@ -7,6 +7,10 @@
   };
 
   const dom = {};
+  const state = {
+    users: [],
+    tasks: []
+  };
 
   document.addEventListener("DOMContentLoaded", function () {
     cacheDom();
@@ -41,13 +45,18 @@
   }
 
   function bindEvents() {
-    dom.userForm.addEventListener("submit", handleUserSubmit);
+    dom.userForm.addEventListener("submit", function (event) {
+      handleUserSubmit(event);
+    });
+
     dom.taskForm.addEventListener("submit", function (event) {
       handleTaskSubmit(event, dom.taskForm, false);
     });
+
     dom.modalTaskForm.addEventListener("submit", function (event) {
       handleTaskSubmit(event, dom.modalTaskForm, true);
     });
+
     dom.taskResetButton.addEventListener("click", function () {
       window.setTimeout(function () {
         resetForm(dom.taskForm);
@@ -58,10 +67,12 @@
       select.addEventListener("change", renderTasksTable);
     });
 
-    dom.tasksTableBody.addEventListener("click", handleTaskActions);
+    dom.tasksTableBody.addEventListener("click", function (event) {
+      handleTaskActions(event);
+    });
   }
 
-  function handleUserSubmit(event) {
+  async function handleUserSubmit(event) {
     event.preventDefault();
     const formData = new FormData(dom.userForm);
     const payload = {
@@ -80,13 +91,17 @@
       return;
     }
 
-    FlowTaskUsers.createUser(payload);
-    resetForm(dom.userForm);
-    renderAll();
-    showToast("Usuario salvo com sucesso.");
+    try {
+      await FlowTaskUsers.createUser(payload);
+      resetForm(dom.userForm);
+      await renderAll();
+      showToast("Usuario salvo com sucesso.");
+    } catch (error) {
+      showToast(error.message);
+    }
   }
 
-  function handleTaskSubmit(event, form, closeModalAfterSave) {
+  async function handleTaskSubmit(event, form, closeModalAfterSave) {
     event.preventDefault();
     const formData = new FormData(form);
     const payload = {
@@ -102,20 +117,24 @@
       return;
     }
 
-    FlowTaskTasks.createTask(payload);
-    resetForm(form);
-    renderAll();
-    showToast("Tarefa criada com sucesso.");
+    try {
+      await FlowTaskTasks.createTask(payload);
+      resetForm(form);
+      await renderAll();
+      showToast("Tarefa criada com sucesso.");
 
-    if (closeModalAfterSave) {
-      const modal = M.Modal.getInstance(document.getElementById("modal-task"));
-      if (modal) {
-        modal.close();
+      if (closeModalAfterSave) {
+        const modal = M.Modal.getInstance(document.getElementById("modal-task"));
+        if (modal) {
+          modal.close();
+        }
       }
+    } catch (error) {
+      showToast(error.message);
     }
   }
 
-  function handleTaskActions(event) {
+  async function handleTaskActions(event) {
     const actionButton = event.target.closest("[data-action]");
 
     if (!actionButton) {
@@ -125,38 +144,56 @@
     const taskId = actionButton.getAttribute("data-task-id");
     const action = actionButton.getAttribute("data-action");
 
-    if (action === "advance-status") {
-      FlowTaskTasks.advanceTaskStatus(taskId);
-      renderAll();
-      showToast("Status da tarefa atualizado.");
-    }
+    try {
+      if (action === "advance-status") {
+        await FlowTaskTasks.advanceTaskStatus(taskId);
+        await renderAll();
+        showToast("Status da tarefa atualizado.");
+      }
 
-    if (action === "delete-task") {
-      FlowTaskTasks.deleteTask(taskId);
-      renderAll();
-      showToast("Tarefa removida.");
+      if (action === "delete-task") {
+        await FlowTaskTasks.deleteTask(taskId);
+        await renderAll();
+        showToast("Tarefa removida.");
+      }
+    } catch (error) {
+      showToast(error.message);
     }
   }
 
-  function renderAll() {
-    renderUserOptions();
-    renderUsersList();
-    renderDashboard();
-    renderTasksTable();
-    renderHeroMetrics();
-    reinitializeSelects();
+  async function loadState() {
+    const data = await Promise.all([
+      FlowTaskUsers.getUsers(),
+      FlowTaskTasks.getTasks()
+    ]);
+
+    state.users = data[0];
+    state.tasks = data[1];
+  }
+
+  async function renderAll() {
+    try {
+      await loadState();
+      renderUserOptions();
+      renderUsersList();
+      renderDashboard();
+      renderTasksTable();
+      renderHeroMetrics();
+      reinitializeSelects();
+    } catch (error) {
+      showToast(error.message || "Nao foi possivel carregar os dados.");
+    }
   }
 
   function renderUsersList() {
-    const users = FlowTaskUsers.getUsers();
-    dom.usersCountChip.textContent = users.length + " usuarios";
+    dom.usersCountChip.textContent = state.users.length + " usuarios";
 
-    if (!users.length) {
+    if (!state.users.length) {
       dom.usersList.innerHTML = '<div class="collection-item">Nenhum usuario cadastrado.</div>';
       return;
     }
 
-    dom.usersList.innerHTML = users
+    dom.usersList.innerHTML = state.users
       .map(function (user) {
         return (
           '<div class="collection-item">' +
@@ -172,11 +209,10 @@
   }
 
   function renderUserOptions() {
-    const users = FlowTaskUsers.getUsers();
     const currentFilterUser = dom.filterUser.value || "Todos";
     const defaultOption = '<option value="" disabled selected>Selecione o responsavel</option>';
     const filterDefault = '<option value="Todos" selected>Todos os responsaveis</option>';
-    const options = users
+    const options = state.users
       .map(function (user) {
         return '<option value="' + user.id + '">' + escapeHtml(user.name) + "</option>";
       })
@@ -189,12 +225,11 @@
   }
 
   function renderDashboard() {
-    const tasks = FlowTaskTasks.getTasks();
     const stats = {
-      total: tasks.length,
-      completed: tasks.filter(function (task) { return task.status === "Concluido"; }).length,
-      progress: tasks.filter(function (task) { return task.status === "Em andamento"; }).length,
-      todo: tasks.filter(function (task) { return task.status === "A fazer"; }).length
+      total: state.tasks.length,
+      completed: state.tasks.filter(function (task) { return task.status === "Concluido"; }).length,
+      progress: state.tasks.filter(function (task) { return task.status === "Em andamento"; }).length,
+      todo: state.tasks.filter(function (task) { return task.status === "A fazer"; }).length
     };
 
     dom.dashboardCards.innerHTML = Object.keys(statusConfig)
@@ -219,12 +254,32 @@
       userId: dom.filterUser.value,
       status: dom.filterStatus.value
     };
-    const tasks = FlowTaskTasks.getSortedTasks(filters);
+
+    const tasks = state.tasks
+      .filter(function (task) {
+        const matchesPriority =
+          !filters.priority || filters.priority === "Todos" || task.priority === filters.priority;
+        const matchesUser =
+          !filters.userId || filters.userId === "Todos" || String(task.responsibleId) === String(filters.userId);
+        const matchesStatus =
+          !filters.status || filters.status === "Todos" || task.status === filters.status;
+
+        return matchesPriority && matchesUser && matchesStatus;
+      })
+      .sort(function (taskA, taskB) {
+        const priorityDifference = getPriorityWeight(taskA.priority) - getPriorityWeight(taskB.priority);
+
+        if (priorityDifference !== 0) {
+          return priorityDifference;
+        }
+
+        return new Date(taskA.deadline) - new Date(taskB.deadline);
+      });
 
     dom.emptyState.classList.toggle("hide", tasks.length > 0);
     dom.tasksTableBody.innerHTML = tasks
       .map(function (task) {
-        const responsible = FlowTaskUsers.findUserById(task.responsibleId);
+        const responsible = findUserInState(task.responsibleId);
         const responsibleName = responsible ? responsible.name : "Nao atribuido";
 
         return (
@@ -247,13 +302,11 @@
   }
 
   function renderHeroMetrics() {
-    const tasks = FlowTaskTasks.getTasks();
-    const users = FlowTaskUsers.getUsers();
-    const completed = tasks.filter(function (task) { return task.status === "Concluido"; }).length;
-    const completionRate = tasks.length ? Math.round((completed / tasks.length) * 100) : 0;
+    const completed = state.tasks.filter(function (task) { return task.status === "Concluido"; }).length;
+    const completionRate = state.tasks.length ? Math.round((completed / state.tasks.length) * 100) : 0;
 
-    dom.heroTotal.textContent = String(tasks.length);
-    dom.heroTeam.textContent = String(users.length);
+    dom.heroTotal.textContent = String(state.tasks.length);
+    dom.heroTeam.textContent = String(state.users.length);
     dom.heroProgress.textContent = completionRate + "%";
   }
 
@@ -263,6 +316,26 @@
 
   function buildStatusBadge(status) {
     return '<span class="status-badge status-' + normalizeClass(status) + '">' + escapeHtml(status) + "</span>";
+  }
+
+  function findUserInState(id) {
+    return (
+      state.users.find(function (user) {
+        return user.id === Number(id);
+      }) || null
+    );
+  }
+
+  function getPriorityWeight(priority) {
+    if (priority === "Alta") {
+      return 0;
+    }
+
+    if (priority === "Media") {
+      return 1;
+    }
+
+    return 2;
   }
 
   function resetForm(form) {
@@ -288,6 +361,7 @@
     if (!dateString) {
       return "-";
     }
+
     return new Intl.DateTimeFormat("pt-BR").format(new Date(dateString + "T00:00:00"));
   }
 

@@ -5,86 +5,50 @@
     Baixa: 2
   };
 
-  const statusFlow = ["A fazer", "Em andamento", "Concluido"];
-
-  const tasks = [
-    {
-      id: 101,
-      title: "Estruturar homepage comercial ",
-      description: "Criar a primeira versao da vitrine institucional da plataforma.",
-      priority: "Alta",
-      deadline: "2026-03-24",
-      responsibleId: 2,
-      status: "Em andamento"
-    },
-    {
-      id: 102,
-      title: "Definir componentes do dashboard ",
-      description: "Mapear blocos visuais e indicadores principais para a tela inicial.",
-      priority: "Media",
-      deadline: "2026-03-28",
-      responsibleId: 3,
-      status: "A fazer"
-    },
-    {
-      id: 103,
-      title: "Revisar backlog semanal ",
-      description: "Organizar prioridades do sprint com base no feedback da equipe.",
-      priority: "Baixa",
-      deadline: "2026-03-21",
-      responsibleId: 1,
-      status: "Concluido"
-    }
-  ];
-
-  function getTasks() {
-    return [...tasks];
+  async function getTasks() {
+    return window.FlowTaskApi.requestJson("/api/tasks", undefined, "Nao foi possivel carregar as tarefas.");
   }
 
-  function createTask(payload) {
-    const task = {
-      id: Date.now(),
-      title: payload.title.trim(),
-      description: payload.description.trim(),
-      priority: payload.priority,
-      deadline: payload.deadline,
-      responsibleId: Number(payload.responsibleId),
-      status: "A fazer"
-    };
-
-    tasks.unshift(task);
-    return task;
+  async function createTask(payload) {
+    return window.FlowTaskApi.requestJson(
+      "/api/tasks",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      },
+      "Nao foi possivel salvar a tarefa."
+    );
   }
 
-  function deleteTask(taskId) {
-    const index = tasks.findIndex(function (task) {
-      return task.id === Number(taskId);
-    });
+  async function deleteTask(taskId) {
+    await window.FlowTaskApi.requestJson(
+      "/api/tasks/" + encodeURIComponent(String(taskId)),
+      {
+        method: "DELETE"
+      },
+      "Nao foi possivel excluir a tarefa."
+    );
 
-    if (index >= 0) {
-      tasks.splice(index, 1);
-      return true;
-    }
-
-    return false;
+    return true;
   }
 
-  function advanceTaskStatus(taskId) {
-    const task = tasks.find(function (item) {
-      return item.id === Number(taskId);
-    });
-
-    if (!task) {
-      return null;
-    }
-
-    const currentIndex = statusFlow.indexOf(task.status);
-    task.status = statusFlow[(currentIndex + 1) % statusFlow.length];
-    return task;
+  async function advanceTaskStatus(taskId) {
+    return window.FlowTaskApi.requestJson(
+      "/api/tasks/" + encodeURIComponent(String(taskId)) + "/status",
+      {
+        method: "PATCH"
+      },
+      "Nao foi possivel atualizar o status."
+    );
   }
 
-  function getSortedTasks(filters) {
-    return getTasks()
+  async function getSortedTasks(filters) {
+    const tasks = await getTasks();
+
+    return tasks
       .filter(function (task) {
         const matchesPriority =
           !filters.priority || filters.priority === "Todos" || task.priority === filters.priority;
